@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important} body{margin:0;font:14px system-ui,sans-serif} img{max-width:100%}</style>
+<title>Impacto de pauta Baloto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: informe de una columna con selector de mes arriba; cada bloque = dato o gráfico + explicación debajo */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --ink:#18202b; --muted:#5d6878; --line:#dde1e7; --soft:#eef1f5;
+  --total:#c4cbd6; --pauta:#1f5fbf; --pauta-soft:#dbe6f7; --nuevo:#d9822b; --nuevo-soft:#f8e6d3;
+  --good:#2f8a57; --c-google:#1f5fbf; --c-meta:#7a52c7; --c-tiktok:#0e9488; --warn:#b4541f;
+  --f-display:"Archivo",system-ui,sans-serif; --f-body:"Public Sans",system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#11161d; --surface:#18202a; --ink:#e8ecf1; --muted:#9aa5b4; --line:#2a3441; --soft:#1e2733;
+  --total:#3a4656; --pauta:#6da0ec; --pauta-soft:#1c2e48; --nuevo:#eda25a; --nuevo-soft:#3a2a1a;
+  --good:#5cc08a; --c-google:#6da0ec; --c-meta:#a989ea; --c-tiktok:#3cc4b6; --warn:#ef8a52; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161d; --surface:#18202a; --ink:#e8ecf1; --muted:#9aa5b4; --line:#2a3441; --soft:#1e2733;
+  --total:#3a4656; --pauta:#6da0ec; --pauta-soft:#1c2e48; --nuevo:#eda25a; --nuevo-soft:#3a2a1a;
+  --good:#5cc08a; --c-google:#6da0ec; --c-meta:#a989ea; --c-tiktok:#3cc4b6; --warn:#ef8a52; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1040px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(28px,4.4vw,42px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:700}
+h3{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+.lead{color:var(--muted);max-width:70ch}
+header{display:flex;flex-direction:column;gap:12px}
+.picker{display:flex;flex-wrap:wrap;align-items:center;gap:8px;position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding-block:10px;margin-block:-10px;border-bottom:1px solid var(--line);box-shadow:0 6px 10px -8px rgba(0,0,0,.25)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--bg)}
+.picker .cur{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-left:auto}
+.picker label{font-size:13px;color:var(--muted);margin-right:4px}
+.mbtn{font-family:var(--f-mono);font-size:13px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);cursor:pointer}
+.mbtn:hover{border-color:var(--pauta)}
+.mbtn[aria-pressed="true"]{background:var(--pauta);border-color:var(--pauta);color:#fff}
+.mbtn:focus-visible{outline:2px solid var(--pauta);outline-offset:2px}
+section{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:18px}
+.sec-head{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.num{font-family:var(--f-mono);font-size:13px;color:var(--pauta);font-weight:600}
+.tag{font-family:var(--f-mono);font-size:12px;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi .v{font-family:var(--f-display);font-size:27px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .l{font-size:13px;color:var(--muted)}
+.kpi.pauta{border-color:var(--pauta);background:var(--pauta-soft)}.kpi.pauta .v{color:var(--pauta)}
+.kpi.nuevo{border-color:var(--nuevo);background:var(--nuevo-soft)}.kpi.nuevo .v{color:var(--nuevo)}
+.kpi.final{border-color:var(--good)}.kpi.final .v{color:var(--good)}
+.kpi .ev{color:var(--warn);font-size:12px}
+.explain{background:var(--soft);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.explain b{font-family:var(--f-display)}
+.explain ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.chart{width:100%;overflow-x:auto}
+.chart svg{display:block;width:100%;height:auto;min-width:560px}
+.chart svg text{fill:var(--muted);font-family:var(--f-mono);font-size:11px}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:2px;display:inline-block}
+.sw.line{height:3px;border-radius:0}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+th:first-child,td:first-child{text-align:left}
+tr.sel td{background:var(--pauta-soft);font-weight:600}
+tr.tot td{font-weight:700;border-top:2px solid var(--line)}
+.chain{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px}
+.step{flex:1 1 140px;border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.step .v{font-family:var(--f-display);font-weight:800;font-size:22px;font-variant-numeric:tabular-nums}
+.step .l{font-size:12.5px;color:var(--muted)}
+.op{align-self:center;font-family:var(--f-mono);color:var(--muted);font-size:18px}
+.step.final{border-color:var(--good)}.step.final .v{color:var(--good)}
+.note{font-size:13px;color:var(--muted)}
+.callout{border:1px solid var(--warn);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.callout strong{color:var(--warn)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.cols>div{display:flex;flex-direction:column;gap:6px;min-width:0}
+.cols ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.srcnote{border:1px solid var(--line);border-left:3px solid var(--pauta);border-radius:6px;background:var(--surface);padding:10px 14px;font-size:13.5px;color:var(--muted);max-width:90ch}
+.srcnote b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line);margin-top:4px}
+.tabs a{font-family:var(--f-display);font-weight:700;font-size:15px;color:var(--muted);text-decoration:none;padding:10px 14px;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-selected="true"]{color:var(--pauta);border-bottom-color:var(--pauta)}
+.tabs a:focus-visible{outline:2px solid var(--pauta);outline-offset:2px}
+.view{display:flex;flex-direction:column;gap:28px}
+.view[hidden]{display:none}
+.timeline{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding-block:10px 4px;margin-block:-10px;border-bottom:1px solid var(--line);box-shadow:0 6px 10px -8px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:6px}
+.tl-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.tl-lbl{font-size:13px;color:var(--muted)}
+.tl-range{font-family:var(--f-display);font-weight:700;font-size:15px}
+.tl-presets{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.daytbl td{white-space:nowrap}
+.tl-gran{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding-left:12px;border-left:1px solid var(--line)}
+.tl-track{position:relative;height:30px;margin-inline:9px}
+.tl-rail{position:absolute;left:0;right:0;top:12px;height:6px;border-radius:3px;background:var(--line)}
+.tl-sel{position:absolute;top:8px;height:14px;border-radius:7px;background:var(--pauta);opacity:.85;cursor:grab;touch-action:none;min-width:4px}
+.tl-sel.drag{cursor:grabbing;opacity:1}
+.tl-track input[type=range]{position:absolute;left:-9px;right:-9px;width:calc(100% + 18px);top:0;height:30px;margin:0;background:none;pointer-events:none;-webkit-appearance:none;appearance:none}
+.tl-track input[type=range]::-webkit-slider-runnable-track{background:none;height:30px}
+.tl-track input[type=range]::-moz-range-track{background:none}
+.tl-track input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:all;width:18px;height:18px;margin-top:6px;border-radius:50%;background:var(--surface);border:3px solid var(--pauta);cursor:ew-resize;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.tl-track input[type=range]::-moz-range-thumb{pointer-events:all;width:14px;height:14px;border-radius:50%;background:var(--surface);border:3px solid var(--pauta);cursor:ew-resize}
+.tl-track input[type=range]:focus-visible::-webkit-slider-thumb{outline:2px solid var(--pauta);outline-offset:2px}
+.tl-ticks{position:relative;height:16px;margin-inline:9px}
+.tl-ticks span{position:absolute;transform:translateX(-50%);font-family:var(--f-mono);font-size:10px;color:var(--muted);white-space:nowrap}
+footer{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+@media (max-width:520px){section{padding:18px}.kpi .v{font-size:23px}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">BALOTO · ANÁLISIS DE PAUTA · 2026</span>
+  <h1>¿Cuánto valen los usuarios que trae la pauta?</h1>
+  <p class="lead">Cruce entre la participación de la pauta en los registros de Google Analytics 4 y el comportamiento de compra de los usuarios nuevos en el CRM, para proyectar el valor de vida de los clientes adquiridos por pauta cada mes.</p>
+  <div class="srcnote"><b>Fuente de atribución: Google Analytics 4.</b> Un registro se cuenta como pauta según la fuente y la campaña (UTM adcom_*) de la sesión en la que ocurrió. Estas cifras no coinciden con las conversiones que reporta cada plataforma (Google Ads, Meta, TikTok), porque cada una usa su propio modelo de atribución: por ejemplo, una plataforma puede contar a quien vio un anuncio aunque después haya entrado al sitio por otro canal.</div>
+  <nav class="tabs" role="tablist" aria-label="Vistas del informe">
+    <a href="#mensual" role="tab" id="tab-mensual">Resumen mensual</a>
+    <a href="#diario" role="tab" id="tab-diario">Detalle diario · desde octubre</a>
+  </nav>
+</header>
+
+<div id="v-mensual" class="view">
+<div class="picker" role="group" aria-label="Mes">
+  <label>Mes:</label>
+  <span id="picker"></span>
+  <span class="cur" id="pk-cur"></span>
+</div>
+
+<!-- 1 -->
+<section>
+  <div class="sec-head"><span class="num">01</span><h2>Resumen del mes</h2><span class="tag" id="t-mes"></span></div>
+  <h3>A · Registros en el sitio (Google Analytics 4)</h3>
+  <div class="kpis">
+    <div class="kpi"><span class="v" id="k-reg"></span><span class="l">Registros exitosos en el mes<span class="ev" id="k-ev1"></span></span></div>
+    <div class="kpi pauta"><span class="v" id="k-regp"></span><span class="l">Registros que vinieron de pauta<span class="ev" id="k-ev2"></span></span></div>
+    <div class="kpi pauta"><span class="v" id="k-share"></span><span class="l">Participación de la pauta (registros de pauta ÷ registros totales)</span></div>
+  </div>
+  <div class="explain">
+    <p><b>Qué mide este grupo.</b> Lo que registra Google Analytics en el sitio: cuántas personas completaron el registro y cuántas de ellas llegaron desde una campaña paga (Google Ads, Meta, TikTok). El porcentaje es la parte del total que trajo la pauta.</p>
+    <p><b>Nota importante (febrero a septiembre):</b> hasta septiembre Google Analytics usaba un evento de registro anterior que contaba unas 2,7 veces más. Esos conteos sirven para sacar el porcentaje del mismo mes, pero no para compararlos con octubre. Por eso el cálculo usa el porcentaje y no el número de registros.</p>
+    <p id="x-a"></p>
+  </div>
+
+  <h3>B · Clientes nuevos (CRM)</h3>
+  <div class="kpis">
+    <div class="kpi"><span class="v" id="k-nuevos"></span><span class="l">Compradores nuevos en el mes (primera apuesta)</span></div>
+    <div class="kpi pauta"><span class="v" id="k-atr"></span><span class="l">Compradores nuevos atribuibles a pauta (compradores nuevos × % de pauta)</span></div>
+  </div>
+  <div class="explain">
+    <p><b>Qué mide este grupo.</b> Los compradores nuevos son las personas que hicieron su primera apuesta en el mes, según el CRM. Para estimar cuántos llegaron por pauta se les aplica el porcentaje del grupo A.</p>
+    <p><b>Por qué se estima y no se cuenta:</b> Google Analytics sabe quién llegó por pauta, pero no quién compró; el CRM sabe quién compró, pero no por dónde llegó. Como ningún dato une a la misma persona en los dos sistemas, se usa la proporción. El supuesto es que quien llega por pauta compra en la misma proporción que quien llega por otros canales.</p>
+    <p id="x-b"></p>
+  </div>
+
+  <h3>C · Cuánto vale un cliente nuevo (CRM)</h3>
+  <div class="kpis">
+    <div class="kpi"><span class="v" id="k-imp"></span><span class="l">Apostado por los clientes nuevos en su primer mes</span></div>
+    <div class="kpi"><span class="v" id="k-arpu"></span><span class="l">Gasto promedio del primer mes por cliente (apostado ÷ compradores nuevos)</span></div>
+    <div class="kpi"><span class="v" id="k-rr"></span><span class="l">Recompra: clientes que vuelven a apostar al mes siguiente<span class="ev" id="k-ev3"></span></span></div>
+    <div class="kpi"><span class="v" id="k-vm"></span><span class="l">Vida media en meses: 1 ÷ (1 − recompra)</span></div>
+    <div class="kpi nuevo"><span class="v" id="k-ltv"></span><span class="l">Valor de vida de un cliente nuevo (gasto promedio × vida media)</span></div>
+  </div>
+  <div class="explain">
+    <p><b>Qué mide este grupo.</b> Cuánto se espera que apueste un cliente nuevo durante toda su relación con la marca. Se calcula con la misma fórmula que ya usa el CRM para el valor de vida general, aplicada solo a los clientes nuevos:</p>
+    <ul>
+      <li><b>Gasto promedio del primer mes:</b> todo lo que apostaron los clientes nuevos en su primer mes, dividido entre cuántos son.</li>
+      <li><b>Recompra:</b> de esos clientes, qué porcentaje volvió a apostar el mes siguiente. Es la cifra que más mueve el resultado.</li>
+      <li><b>Vida media:</b> cuántos meses dura en promedio un cliente según esa recompra. Si vuelve el 40 %, dura 1 ÷ 0,60 ≈ 1,7 meses; si vuelve el 50 %, dura 2 meses.</li>
+      <li><b>Valor de vida:</b> gasto promedio del primer mes × vida media.</li>
+    </ul>
+    <p id="x-c"></p>
+  </div>
+
+  <h3>D · Resultado</h3>
+  <div class="kpis">
+    <div class="kpi final"><span class="v" id="k-val"></span><span class="l">Valor de vida proyectado de los clientes de pauta (atribuibles a pauta × valor de vida)</span></div>
+  </div>
+  <div class="explain">
+    <p id="x-resumen"></p>
+  </div>
+
+  <h3>E · Inversión y retorno</h3>
+  <div class="kpis">
+    <div class="kpi"><span class="v" id="k-inv"></span><span class="l">Inversión en pauta del mes (todas las plataformas)</span></div>
+    <div class="kpi"><span class="v" id="k-ia"></span><span class="l">De esa inversión, en campañas de adquisición y awareness</span></div>
+    <div class="kpi pauta"><span class="v" id="k-cpa"></span><span class="l">Costo por comprador nuevo de pauta (inversión ÷ atribuibles a pauta)</span></div>
+    <div class="kpi final"><span class="v" id="k-roi"></span><span class="l">Valor proyectado ÷ inversión</span></div>
+  </div>
+  <div class="explain">
+    <p><b>Qué mide este grupo.</b> Cuánto se invirtió en pauta en el mes, cuánto costó en promedio cada comprador nuevo que trajo y cuántas veces el valor proyectado de esos clientes cubre la inversión.</p>
+    <ul>
+      <li><b>Costo por comprador nuevo de pauta:</b> inversión del mes ÷ compradores nuevos atribuibles a pauta (grupo B). Se compara bien entre meses porque no depende del evento de registro de Google Analytics.</li>
+      <li><b>Valor ÷ inversión:</b> valor proyectado (grupo D) ÷ inversión. Por ejemplo, 1,5× quiere decir que por cada peso invertido se proyectan 1,5 pesos en apuestas de los clientes nuevos de pauta.</li>
+      <li>La inversión incluye también campañas de retención y activación (MiLoto, ColorLoto, Promo Italia), que no buscan clientes nuevos. Por eso se muestra aparte cuánto fue a adquisición y awareness.</li>
+    </ul>
+    <p id="x-e"></p>
+  </div>
+</section>
+
+<!-- 2 -->
+<section>
+  <div class="sec-head"><span class="num">02</span><h2>Cómo se llega al valor proyectado</h2><span class="tag" id="t-mes2"></span></div>
+  <div class="chain" id="chain"></div>
+  <div class="explain">
+    <p><b>Cómo leer la cadena.</b> Es la misma operación del resumen, mostrada paso a paso para que cada cifra se pueda revisar.</p>
+    <ul>
+      <li>El primer paso cruza dos fuentes: los compradores salen del CRM y el porcentaje sale de Google Analytics. Se usa el porcentaje y no el número de registros porque GA y el CRM no comparten un identificador de usuario.</li>
+      <li>El valor de vida se calcula con la fórmula del CRM: gasto del primer mes × vida media. La vida media depende de cuántos vuelven a apostar al mes siguiente: si vuelve el 40 %, el cliente dura en promedio 1 ÷ (1 − 0,40) ≈ 1,7 meses.</li>
+      <li>El resultado es una proyección en pesos apostados. No descuenta premios ni comisiones.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 3 -->
+<section>
+  <div class="sec-head"><span class="num">03</span><h2>Evolución mes a mes</h2></div>
+  <div class="legend"><span><i class="sw" style="background:var(--good)"></i>Valor proyectado de pauta (millones)</span><span><i class="sw line" style="background:var(--pauta)"></i>% de registros que vienen de pauta</span></div>
+  <div class="chart" id="ch-trend"></div>
+  <div class="explain">
+    <p><b>Cómo leer este gráfico.</b> Las barras verdes son el valor proyectado de los clientes que trajo la pauta cada mes, en millones de pesos (escala izquierda). La línea azul es qué parte de los registros vino de pauta (escala derecha). El mes seleccionado aparece resaltado.</p>
+    <ul>
+      <li>Si la línea sube, la pauta está pesando más dentro del total de registros.</li>
+      <li>Si las barras suben más rápido que la línea, además los clientes nuevos están valiendo más (recompran más).</li>
+      <li>Octubre va hasta el día 28 y su valor de vida es una estimación, por eso se marca con borde punteado.</li>
+    </ul>
+    <p id="x-trend"></p>
+  </div>
+</section>
+
+<!-- 3b -->
+<section>
+  <div class="sec-head"><span class="num">04</span><h2>Inversión vs. valor proyectado</h2></div>
+  <div class="legend"><span><i class="sw" style="background:var(--total)"></i>Inversión en pauta del mes</span><span><i class="sw" style="background:var(--good)"></i>Valor proyectado de los clientes de pauta</span></div>
+  <div class="chart" id="ch-inv"></div>
+  <div class="explain">
+    <p><b>Cómo leer este gráfico.</b> Para cada mes, la barra gris es lo que se invirtió en pauta y la verde, el valor de vida proyectado de los clientes nuevos que trajo. La cifra de arriba (por ejemplo, 1,5×) es cuántas veces el valor cubre la inversión. Debajo de cada mes está el costo por comprador nuevo de pauta.</p>
+    <ul>
+      <li>Si la barra verde es más alta que la gris, la pauta de ese mes proyecta más valor del que costó.</li>
+      <li>Los meses con asterisco (*) tienen la recompra estimada, por eso sus barras verdes tienen borde punteado.</li>
+    </ul>
+    <p id="x-inv"></p>
+  </div>
+</section>
+
+<!-- 5 -->
+<section>
+  <div class="sec-head"><span class="num">05</span><h2>Valor de vida de los clientes nuevos: cuánto es de pauta</h2></div>
+  <div class="legend"><span><i class="sw" style="background:var(--good)"></i>Parte atribuible a pauta</span><span><i class="sw" style="background:var(--total)"></i>Parte de otros canales (orgánico, directo, referidos)</span></div>
+  <div class="chart" id="ch-ltv"></div>
+  <div class="explain">
+    <p><b>Cómo leer este gráfico.</b> Cada barra es el valor de vida total de todos los clientes nuevos del mes: cuánto se espera que apuesten, entre todos, a lo largo de su vida como clientes (compradores nuevos × valor de vida de un cliente nuevo). La barra se divide según el % de pauta del mes: la parte verde es lo que se atribuye a la pauta y la gris, a los demás canales.</p>
+    <ul>
+      <li>La parte verde es el mismo valor proyectado del bloque D del resumen.</li>
+      <li>Si la parte verde crece más que la barra completa, la pauta está ganando peso en el valor que generan los clientes nuevos.</li>
+      <li>El valor de vida por cliente es el mismo para pauta y para otros canales: como el CRM no guarda por dónde llegó cada cliente, la pauta solo se puede estimar en cantidad de clientes, no en cuánto vale cada uno.</li>
+    </ul>
+    <p id="x-ltv"></p>
+  </div>
+</section>
+
+<!-- 5 -->
+<section>
+  <div class="sec-head"><span class="num">06</span><h2>Tabla completa</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Mes 2026</th><th>Compradores nuevos</th><th>% pauta</th><th>Atribuibles a pauta</th><th>Gasto mes 1</th><th>Recompra mes 2</th><th>Valor de vida nuevo</th><th>Valor proyectado</th><th>Inversión</th><th>Costo por comprador de pauta</th><th>Valor ÷ inversión</th></tr></thead>
+    <tbody id="tb-all"></tbody>
+  </table></div>
+  <div class="explain">
+    <p><b>Cómo leer la tabla.</b> Una fila por mes, con todas las cifras que alimentan el cálculo. La fila resaltada es el mes seleccionado arriba; puedes hacer clic en cualquier fila para cambiarlo.</p>
+    <ul>
+      <li><b>Gasto mes 1:</b> lo que apostó en promedio cada cliente nuevo en su primer mes.</li>
+      <li><b>Recompra mes 2:</b> qué porcentaje volvió a apostar al mes siguiente. Es la cifra que más mueve el valor de vida.</li>
+      <li><b>Inversión:</b> lo invertido en pauta en el mes, en todas las plataformas.</li>
+      <li><b>Costo por comprador de pauta:</b> inversión ÷ compradores nuevos atribuibles a pauta.</li>
+      <li><b>Valor ÷ inversión:</b> cuántas veces el valor proyectado cubre lo invertido. Por encima de 1×, la pauta genera más valor del que cuesta.</li>
+      <li><b>Fila total:</b> suma de todos los meses.</li>
+      <li>Los meses con asterisco (*) tienen la recompra estimada porque aún no se puede medir.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 6 -->
+<section>
+  <div class="sec-head"><span class="num">07</span><h2>Supuestos y límites</h2></div>
+  <div class="cols">
+    <div><h3>Supuestos</h3>
+      <ul>
+        <li>Los clientes que llegan por pauta se comportan como el promedio de los clientes nuevos del mes.</li>
+        <li>El evento anterior de GA inflaba los registros por igual en todos los canales, por lo que el % de pauta de febrero a septiembre es comparable.</li>
+        <li>Valor de vida con la fórmula del CRM: gasto del primer mes × vida media según la recompra del mes siguiente.</li>
+        <li>La inversión es la que reporta cada plataforma (Google Ads, Meta, TikTok, X y programática) e incluye campañas de retención y activación, que no buscan clientes nuevos.</li>
+        <li>El costo por comprador compara la inversión de un periodo con los clientes que llegaron en ese mismo periodo, aunque un anuncio puede convertir días después.</li>
+      </ul></div>
+    <div><h3>Límites</h3>
+      <ul>
+        <li>Enero no se incluye: casi no hay registros de campañas etiquetadas ese mes.</li>
+        <li id="sup-rr"></li>
+        <li id="sup-parcial"></li>
+        <li>Para medir cliente por cliente se requiere guardar el origen de la campaña (UTM) en el registro del CRM.</li>
+      </ul></div>
+  </div>
+</section>
+
+</div>
+
+<div id="v-diario" class="view" hidden>
+
+<div class="timeline" id="timeline">
+  <div class="tl-head">
+    <span class="tl-lbl">Periodo:</span>
+    <span class="tl-range" id="tl-range"></span>
+    <span class="tl-gran" role="group" aria-label="Agrupar">
+      <span class="tl-lbl">Ver por:</span>
+      <button type="button" class="mbtn" data-gran="dia">Días</button>
+      <button type="button" class="mbtn" data-gran="sem">Semanas</button>
+    </span>
+    <span class="tl-presets">
+      <button type="button" class="mbtn" data-preset="all">Todo</button>
+      <button type="button" class="mbtn" data-preset="14">Últimos 14 días</button>
+      <button type="button" class="mbtn" data-preset="7">Últimos 7 días</button>
+    </span>
+  </div>
+  <div class="tl-track" id="tl-track">
+    <div class="tl-rail"></div>
+    <div class="tl-sel" id="tl-sel" title="Arrastra para mover el periodo"></div>
+    <input type="range" id="tl-a" aria-label="Fecha de inicio">
+    <input type="range" id="tl-b" aria-label="Fecha de fin">
+  </div>
+  <div class="tl-ticks" id="tl-ticks"></div>
+</div>
+
+<div class="srcnote"><b>Desde el 1 de octubre de 2026.</b> Esta vista arranca en octubre porque desde finales de septiembre Google Analytics mide los registros con un evento nuevo y confiable. Los días anteriores se midieron con otro evento que no es comparable. La serie se seguirá ampliando a medida que pasen los días.</div>
+
+<section>
+  <div class="sec-head"><span class="num">01</span><h2>Registros del periodo</h2><span class="tag js-range"></span></div>
+  <div class="kpis">
+    <div class="kpi"><span class="v" id="dk-tot"></span><span class="l">Registros exitosos en total</span></div>
+    <div class="kpi pauta"><span class="v" id="dk-pau"></span><span class="l">Registros que vinieron de pauta</span></div>
+    <div class="kpi pauta"><span class="v" id="dk-share"></span><span class="l">Participación de la pauta</span></div>
+    <div class="kpi"><span class="v" id="dk-avg"></span><span class="l" id="dk-avg-l">Registros de pauta por día, en promedio</span></div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><span class="v" id="dk-g"></span><span class="l">Google Ads</span></div>
+    <div class="kpi"><span class="v" id="dk-m"></span><span class="l">Meta (Facebook e Instagram)</span></div>
+    <div class="kpi"><span class="v" id="dk-t"></span><span class="l">TikTok</span></div>
+  </div>
+  <div class="explain">
+    <p><b>Qué muestran estos números.</b> El acumulado del periodo elegido en la línea de tiempo: cuántos registros exitosos hubo en el sitio, cuántos llegaron desde una campaña paga y cómo se reparten entre las tres plataformas. Los porcentajes de cada plataforma son sobre el total de registros de pauta.</p>
+    <p id="dx-kpi"></p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">02</span><h2>Valor proyectado de la pauta</h2><span class="tag js-range"></span></div>
+  <div class="kpis">
+    <div class="kpi"><span class="v" id="dk-n"></span><span class="l">Compradores nuevos (CRM, primera apuesta)</span></div>
+    <div class="kpi pauta"><span class="v" id="dk-atr"></span><span class="l">Compradores nuevos atribuibles a pauta (suma de cada día)</span></div>
+    <div class="kpi nuevo"><span class="v" id="dk-ltv"></span><span class="l" id="dk-ltv-l">Valor de vida de un cliente nuevo</span></div>
+    <div class="kpi final"><span class="v" id="dk-val"></span><span class="l">Valor de vida proyectado de los clientes de pauta</span></div>
+  </div>
+  <div class="legend"><span><i class="sw" style="background:var(--good)"></i>Valor proyectado por <span class="js-unit">día</span> (millones)</span><span><i class="sw" style="background:var(--pauta-soft);border:1px solid var(--pauta)"></i>% de los registros que vinieron de pauta</span></div>
+  <div class="chart" id="ch-val"></div>
+  <div class="explain">
+    <p><b>Cómo se calcula cada día.</b> Es el mismo cálculo del resumen mensual, aplicado día por día:</p>
+    <ul>
+      <li><b>Compradores nuevos del día:</b> personas que hicieron su primera apuesta ese día, según el CRM.</li>
+      <li><b>% de pauta del día:</b> registros de pauta ÷ registros totales de ese día en Google Analytics.</li>
+      <li><b>Atribuibles a pauta:</b> compradores nuevos × % de pauta del día.</li>
+      <li><b>Valor proyectado:</b> atribuibles × valor de vida de un cliente nuevo del mes. Es lo que se espera que apuesten esos clientes a lo largo de su vida.</li>
+    </ul>
+    <p id="dx-val0"></p>
+    <p><b>Cómo leer el gráfico.</b> Con "Ver por: Semanas", cada barra suma los días de lunes a domingo; las semanas incompletas al inicio o al final del periodo indican cuántos días tienen. Las barras verdes son el valor proyectado de cada día o semana (en millones, la cifra encima de cada barra). El porcentaje en azul debajo de cada barra es la participación de la pauta en los registros de ese día, que es el que se usa para calcularla. Todos los días de un mismo mes usan el mismo valor de vida; lo que cambia de un día a otro es cuántos compradores nuevos hubo y qué parte se atribuye a la pauta.</p>
+    <p id="dx-val"></p>
+    <p><b>Nota importante:</b> la suma de los días puede diferir un poco del valor del mes en el resumen mensual, porque aquí cada día usa su propio porcentaje de pauta y allá se usa el porcentaje del mes completo. El valor de vida del mes en curso es una proyección: su recompra se estima con el promedio de junio a septiembre.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">03</span><h2>Inversión y costo por comprador</h2><span class="tag js-range"></span></div>
+  <div class="kpis">
+    <div class="kpi"><span class="v" id="dk-inv"></span><span class="l">Inversión en pauta del periodo</span></div>
+    <div class="kpi"><span class="v" id="dk-ia"></span><span class="l">De esa inversión, en adquisición y awareness</span></div>
+    <div class="kpi pauta"><span class="v" id="dk-cpa"></span><span class="l">Costo por comprador nuevo de pauta</span></div>
+    <div class="kpi"><span class="v" id="dk-cpr"></span><span class="l">Costo por registro de pauta (Google Analytics)</span></div>
+    <div class="kpi final"><span class="v" id="dk-roi"></span><span class="l">Valor proyectado ÷ inversión</span></div>
+  </div>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--c-google)"></i>Google Ads</span>
+    <span><i class="sw" style="background:var(--c-meta)"></i>Meta</span>
+    <span><i class="sw" style="background:var(--c-tiktok)"></i>TikTok</span>
+    <span><i class="sw" style="background:var(--pauta-soft);border:1px solid var(--pauta)"></i>Costo por comprador nuevo de pauta (miles de pesos)</span>
+  </div>
+  <div class="chart" id="ch-inv-d"></div>
+  <div class="explain">
+    <p><b>Qué mide este bloque.</b> Cuánto se invirtió en pauta y cuánto costó cada cliente nuevo que trajo.</p>
+    <ul>
+      <li><b>Costo por comprador nuevo de pauta:</b> inversión ÷ compradores nuevos atribuibles a pauta (bloque 02). Es la cifra principal porque mide clientes que ya apostaron, no solo registros.</li>
+      <li><b>Costo por registro de pauta:</b> inversión ÷ registros de pauta en Google Analytics. Sirve como referencia rápida; un registro no siempre termina en compra.</li>
+      <li><b>Valor proyectado ÷ inversión:</b> cuántas veces el valor de vida proyectado de esos clientes cubre lo invertido.</li>
+    </ul>
+    <p id="dx-inv0"></p>
+    <p><b>Cómo leer el gráfico.</b> Cada barra es la inversión del día o la semana (en millones, la cifra de arriba), dividida por plataforma. Debajo de cada barra, en azul, está el costo por comprador nuevo de pauta en miles de pesos. Pasa el cursor sobre una barra para ver el detalle.</p>
+    <p id="dx-inv"></p>
+    <p><b>Nota importante:</b> la inversión de cada día se compara con los clientes que llegaron ese mismo día. Un anuncio puede verse un día y generar el registro días después, por eso el costo diario varía bastante; la vista por semanas o el periodo completo dan una lectura más estable. La inversión incluye también campañas de retención y activación, que no buscan clientes nuevos.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">04</span><h2>Registros por <span class="js-unit">día</span> y por canal</h2><span class="tag js-range"></span></div>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--c-google)"></i>Google Ads</span>
+    <span><i class="sw" style="background:var(--c-meta)"></i>Meta</span>
+    <span><i class="sw" style="background:var(--c-tiktok)"></i>TikTok</span>
+    <span><i class="sw" style="background:var(--total)"></i>Otros canales (orgánico, directo, referidos)</span>
+  </div>
+  <div class="chart" id="ch-day"></div>
+  <div class="explain">
+    <p><b>Cómo leer este gráfico.</b> Cada barra es un día. La altura total es el número de registros exitosos de ese día (la cifra encima de la barra) y la cifra blanca dentro es el total de pauta. Los colores muestran de dónde llegaron: las tres plataformas de pauta abajo y los demás canales arriba, en gris.</p>
+    <ul>
+      <li>Una barra alta con mucho color indica un día en que la pauta empujó los registros.</li>
+      <li>Una barra alta con mucho gris indica un día con más registros orgánicos o directos, por ejemplo por un sorteo o un acumulado alto.</li>
+      <li>Pasa el cursor sobre una barra para ver el detalle de ese día.</li>
+    </ul>
+    <p id="dx-day"></p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">05</span><h2>Participación de la pauta por <span class="js-unit">día</span></h2><span class="tag js-range"></span></div>
+  <div class="legend">
+    <span><i class="sw line" style="background:var(--pauta)"></i>% de pauta por <span class="js-unit">día</span></span>
+    <span><i class="sw line" style="background:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 9px)"></i>Promedio del periodo: <b id="lg-avg" style="color:var(--ink)"></b></span>
+    <span><i class="sw" style="background:var(--pauta);border-radius:50%"></i>Por encima del promedio</span>
+    <span><i class="sw" style="background:var(--surface);border:2px solid var(--pauta);border-radius:50%"></i>Por debajo del promedio</span>
+  </div>
+  <div class="chart" id="ch-share"></div>
+  <div class="explain">
+    <p><b>Cómo leer este gráfico.</b> Cada punto es el porcentaje de los registros del día que vino de pauta (registros de pauta ÷ registros totales del día). La línea punteada es el promedio del periodo elegido.</p>
+    <ul>
+      <li>Por encima de la línea punteada, la pauta pesó más de lo normal ese día.</li>
+      <li>Un día con muchos registros pero poca participación de pauta suele deberse a tráfico orgánico o directo.</li>
+    </ul>
+    <p id="dx-share"></p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">06</span><h2>Tabla por <span class="js-unit">día</span></h2><span class="tag js-range"></span></div>
+  <div class="tbl"><table class="daytbl">
+    <thead><tr><th>Fecha</th><th>Registros totales</th><th>De pauta</th><th>% pauta</th><th>Google Ads</th><th>Meta</th><th>TikTok</th><th>Otros canales</th><th>Compradores nuevos (CRM)</th><th>Atribuibles a pauta</th><th>Valor proyectado</th><th>Inversión</th><th>Costo por comprador de pauta</th></tr></thead>
+    <tbody id="tb-day"></tbody>
+  </table></div>
+  <div class="explain">
+    <p><b>Cómo leer la tabla.</b> Una fila por día o por semana del periodo elegido, según "Ver por", con las mismas cifras de los gráficos. "De pauta" es la suma de Google Ads, Meta y TikTok; "Otros canales" es la diferencia contra el total. Las columnas finales salen del CRM, de la inversión y del cálculo de valor: compradores nuevos, cuántos se atribuyen a pauta, su valor de vida proyectado, lo invertido y el costo por comprador nuevo de pauta (inversión ÷ atribuibles). La última fila suma el periodo. Se resaltan los tres días (o semanas) con más registros de pauta.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">07</span><h2>Pauta por plataforma y campaña</h2><span class="tag js-range"></span></div>
+  <div class="chart" id="ch-plat"></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Campaña</th><th>Plataforma</th><th>Registros (GA4)</th><th>% pauta</th><th>Inversión</th><th>Costo por registro</th></tr></thead>
+    <tbody id="tb-camp"></tbody>
+  </table></div>
+  <div class="explain">
+    <p><b>Cómo leer este bloque.</b> El gráfico muestra cuántos registros aportó cada plataforma en el periodo elegido, qué parte del total de pauta representan, cuánto se invirtió y cuánto costó cada comprador nuevo atribuible a esa plataforma. La tabla baja al nivel de campaña, con la inversión y el costo por registro de Google Analytics.</p>
+    <ul>
+      <li><b>Adquisición</b> (search, Performance Max, influencers, TikTok registros) busca personas nuevas: <span id="dx-acq"></span> de los registros de pauta.</li>
+      <li><b>Remarketing y activación</b> le habla a personas que ya conocían la marca (MiLoto, Colorloto, Baloto, Promo Italia): <span id="dx-ret"></span>. Estas campañas buscan compras más que registros, por eso su costo por registro sale alto y no debe compararse con el de adquisición.</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <span>Fuentes: Zoho Analytics · Google Analytics 4 (evento de registro exitoso por fuente y campaña) · CRM (apuestas y valor de vida por mes) · inversión por campaña de cada plataforma ([Baloto] Fuente de datos GA4).</span>
+  <span id="f-corte"></span>
+  <span>Pauta = campañas adcom_* y medios cpc / paid en Google Analytics 4.</span>
+</footer>
+</div>
+
+<script>
+function iniciar(DATA){
+  const ns="http://www.w3.org/2000/svg";
+  const fmt=n=>Math.round(n).toLocaleString("es-CO");
+  const money=n=>"$"+fmt(n);
+  const mill=n=>"$"+fmt(n/1e6)+" M";
+  const pct=n=>(n*100).toFixed(1).replace(".",",")+" %";
+  const css=v=>`var(${v})`;
+  // n: compradores nuevos, imp: importe mes 1, r: recompra mes 2 (null = aún no medible), g: registros GA, p: registros pauta GA, lg: LTV general,
+  // inv: inversión total en pauta, ia: inversión en adquisición + awareness, ym: año-mes, est: recompra estimada, partial: mes incompleto
+  // Los datos llegan desde data.json (lo genera scripts/actualizar.py cada día)
+  const raw=DATA.mensual;
+
+  // recompra estimada = promedio de los últimos 4 meses con recompra medida
+  const RRM=raw.filter(d=>d.r!=null).slice(-4),RR_EST=RRM.reduce((a,d)=>a+d.r/d.n,0)/RRM.length,RR_LBL=`${RRM[0].m.toLowerCase()}–${RRM[RRM.length-1].m.toLowerCase()}`;
+  const D=raw.map(d=>{const arpu=d.imp/d.n,rr=d.r==null?RR_EST:d.r/d.n,vm=1/(1-rr),ltv=arpu*vm,share=d.p/d.g,atr=d.n*share,val=atr*ltv;return {...d,arpu,rr,vm,ltv,share,atr,val,cpa:d.inv/atr,roi:val/d.inv}});
+  const total=D.reduce((a,d)=>a+d.val,0),totInv=D.reduce((a,d)=>a+d.inv,0),totAtr=D.reduce((a,d)=>a+d.atr,0);
+  let sel=D.findLastIndex(x=>!x.partial);
+  try{const s=localStorage.getItem("mesPauta");if(s!==null&&D[+s])sel=+s}catch(e){}
+
+  function el(tag,attrs,parent,text){const e=document.createElementNS(ns,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;if(parent)parent.appendChild(e);return e}
+  function svg(id,w,h,label){const c=document.getElementById(id);c.innerHTML="";const s=el("svg",{viewBox:`0 0 ${w} ${h}`,role:"img","aria-label":label});c.appendChild(s);return s}
+
+  // picker
+  const pk=document.getElementById("picker");
+  D.forEach((d,i)=>{const b=document.createElement("button");b.className="mbtn";b.id="m-"+d.m;b.textContent=d.m+(d.est?"*":"");b.addEventListener("click",()=>setSel(i));pk.appendChild(b)});
+
+  function setSel(i){sel=i;try{localStorage.setItem("mesPauta",i)}catch(e){}render()}
+
+  function render(){
+    const d=D[sel];
+    pk.querySelectorAll(".mbtn").forEach((b,i)=>b.setAttribute("aria-pressed",i===sel));
+    document.getElementById("pk-cur").textContent="Viendo: "+d.full;
+    ["t-mes","t-mes2"].forEach(id=>document.getElementById(id).textContent=d.full);
+    document.getElementById("k-nuevos").textContent=fmt(d.n);
+    document.getElementById("k-reg").textContent=fmt(d.g);
+    document.getElementById("k-regp").textContent=fmt(d.p);
+    const evTxt=d.newEv?"":(d.m==="Sep"?" · evento anterior + nuevo":" · evento anterior");
+    document.getElementById("k-ev1").textContent=evTxt;document.getElementById("k-ev2").textContent=evTxt;
+    const dec=n=>n.toFixed(2).replace(".",",");
+    document.getElementById("k-imp").textContent=mill(d.imp);
+    document.getElementById("k-arpu").textContent=money(d.arpu);
+    document.getElementById("k-rr").textContent=pct(d.rr);
+    document.getElementById("k-ev3").textContent=d.est?` · promedio ${RR_LBL} (aún no se puede medir)`:"";
+    document.getElementById("k-vm").textContent=dec(d.vm);
+    document.getElementById("x-a").innerHTML=`<b>En ${d.full.toLowerCase()}:</b> ${fmt(d.p)} ÷ ${fmt(d.g)} = ${pct(d.share)} de los registros vinieron de pauta.`;
+    document.getElementById("x-b").innerHTML=`<b>En ${d.full.toLowerCase()}:</b> ${fmt(d.n)} compradores nuevos × ${pct(d.share)} ≈ ${fmt(d.atr)} compradores nuevos atribuibles a pauta.`;
+    document.getElementById("x-c").innerHTML=`<b>En ${d.full.toLowerCase()}:</b> los clientes nuevos apostaron ${mill(d.imp)} en su primer mes, ${money(d.arpu)} por cliente. ${d.est?`Como la recompra de ${d.m.toLowerCase()} solo se conoce al cerrar el mes siguiente, se usa el promedio de ${RR_LBL} (${pct(d.rr)})`:"El "+pct(d.rr)+" volvió a apostar al mes siguiente"}, lo que da una vida media de 1 ÷ (1 − ${dec(d.rr)}) = ${dec(d.vm)} meses. Valor de vida: ${money(d.arpu)} × ${dec(d.vm)} = ${money(d.ltv)}.${d.partial?" El mes aún no cierra: quien se registró hace pocos días lleva poco tiempo apostando, por eso su gasto del primer mes todavía está por debajo de los otros meses.":""}`;
+    document.getElementById("k-share").textContent=pct(d.share);
+    document.getElementById("k-atr").textContent="≈ "+fmt(d.atr);
+    document.getElementById("k-ltv").textContent=money(d.ltv);
+    document.getElementById("k-val").textContent="≈ "+mill(d.val);
+    document.getElementById("k-inv").textContent=mill(d.inv);
+    document.getElementById("k-ia").textContent=`${mill(d.ia)} · ${pct(d.ia/d.inv)}`;
+    document.getElementById("k-cpa").textContent=money(d.cpa);
+    document.getElementById("k-roi").textContent=d.roi.toFixed(2).replace(".",",")+"×";
+    document.getElementById("x-e").innerHTML=`<b>En ${d.full.toLowerCase()}:</b> se invirtieron ${mill(d.inv)} en pauta (${pct(d.ia/d.inv)} en adquisición y awareness). Con unos ${fmt(d.atr)} compradores nuevos atribuibles, cada uno costó en promedio ${money(d.cpa)}. El valor proyectado de esos clientes (${mill(d.val)}) equivale a ${d.roi.toFixed(2).replace(".",",")} veces la inversión.${d.partial?" El mes aún no cierra.":""}`;
+    document.getElementById("x-resumen").innerHTML=`<b>En ${d.full.toLowerCase()}:</b> ${fmt(d.n)} personas apostaron por primera vez. Google Analytics registró ${fmt(d.g)} registros, de los cuales ${fmt(d.p)} vinieron de pauta (${pct(d.share)}). Aplicando ese porcentaje, se estima que unos ${fmt(d.atr)} de esos clientes llegaron por campañas. Cada cliente nuevo vale en promedio ${money(d.ltv)} a lo largo de su vida, así que el aporte futuro de la pauta de ese mes es de unos ${mill(d.val)} en apuestas.${d.partial?" El mes aún no cierra: el dato cambiará al terminar el mes.":d.est?" La recompra se actualizará cuando cierre el mes siguiente.":""}`;
+
+    // chain
+    document.getElementById("chain").innerHTML=`
+      <div class="step"><span class="v">${fmt(d.n)}</span><span class="l">compradores nuevos (CRM)</span></div><span class="op">×</span>
+      <div class="step"><span class="v">${pct(d.share)}</span><span class="l">registros de pauta (GA4: ${fmt(d.p)} de ${fmt(d.g)})</span></div><span class="op">=</span>
+      <div class="step"><span class="v">≈ ${fmt(d.atr)}</span><span class="l">compradores atribuibles a pauta</span></div><span class="op">×</span>
+      <div class="step"><span class="v">${money(d.ltv)}</span><span class="l">valor de vida nuevo (${money(d.arpu)} × ${d.vm.toFixed(2).replace(".",",")} meses)</span></div><span class="op">=</span>
+      <div class="step final"><span class="v">≈ ${mill(d.val)}</span><span class="l">valor proyectado</span></div>`;
+
+    // trend
+    (function(){
+      const W=900,H=300,L=60,R=56,T=20,B=34,s=svg("ch-trend",W,H,"Valor proyectado de pauta y porcentaje de pauta por mes"),max=Math.ceil(Math.max(...D.map(x=>x.val))/1e8)*1e8,gw=(W-L-R)/D.length,ih=H-T-B;
+      Array.from({length:max/1e8+1},(_,i)=>i*100).forEach(v=>{const y=T+ih*(1-v*1e6/max);el("line",{x1:L,x2:W-R,y1:y,y2:y,stroke:css("--line")},s);el("text",{x:L-6,y:y+4,"text-anchor":"end"},s,"$"+v+" M")});
+      [0,20,40,60].forEach(v=>{const y=T+ih*(1-v/60);el("text",{x:W-R+6,y:y+4},s,v+" %")});
+      const pts=[];
+      D.forEach((x,i)=>{const bw=gw*.56,bx=L+i*gw+(gw-bw)/2,h=ih*x.val/max,on=i===sel;
+        const r=el("rect",{x:bx,y:T+ih-h,width:bw,height:h,fill:css("--good"),opacity:on?1:.38,rx:2,style:"cursor:pointer"},s);
+        if(x.est){r.setAttribute("stroke",css("--good"));r.setAttribute("stroke-dasharray","4 3");r.setAttribute("stroke-width","1.5")}
+        el("title",{},r,`${x.full}: ${mill(x.val)} · pauta ${pct(x.share)}`);
+        r.addEventListener("click",()=>setSel(i));
+        el("text",{x:bx+bw/2,y:T+ih-h-6,"text-anchor":"middle",style:on?"fill:"+css("--ink")+";font-weight:600":""},s,fmt(x.val/1e6));
+        el("text",{x:bx+bw/2,y:H-B+18,"text-anchor":"middle",style:on?"fill:"+css("--ink")+";font-weight:600":""},s,x.m+(x.est?"*":""));
+        pts.push([L+i*gw+gw/2,T+ih*(1-x.share*100/60)]);
+      });
+      el("polyline",{points:pts.map(p=>p.join(",")).join(" "),fill:"none",stroke:css("--pauta"),"stroke-width":2.5},s);
+      pts.forEach((p,i)=>el("circle",{cx:p[0],cy:p[1],r:i===sel?6:4,fill:css("--pauta"),stroke:css("--surface"),"stroke-width":2},s));
+      const f=D[0],l=[...D].reverse().find(x=>!x.est);
+      document.getElementById("x-trend").innerHTML=`<b>Lo que se ve en el año:</b> la pauta pasó de ${pct(f.share)} de los registros en febrero a ${pct(l.share)} en ${l.full.toLowerCase()}, y el valor proyectado subió de ${mill(f.val)} a ${mill(l.val)}. Sumando ${f.full.toLowerCase()} a ${D[D.length-1].full.toLowerCase()}, la pauta aporta un valor de vida proyectado de unos <b>${mill(total)}</b>.`;
+    })();
+
+
+    // inversión vs valor
+    (function(){
+      const W=900,H=320,L=64,R=10,T=30,B=58,s=svg("ch-inv",W,H,"Inversión vs valor proyectado por mes"),gw=(W-L-R)/D.length,ih=H-T-B,max=Math.ceil(Math.max(...D.map(x=>Math.max(x.val,x.inv)))/1e8)*1e8;
+      for(let v=0;v<=max;v+=1e8){const y=T+ih*(1-v/max);el("line",{x1:L,x2:W-R,y1:y,y2:y,stroke:css("--line")},s);el("text",{x:L-6,y:y+4,"text-anchor":"end"},s,"$"+fmt(v/1e6)+" M")}
+      D.forEach((x,i)=>{const x0=L+i*gw,bw=gw*.3,on=i===sel,op=on?1:.5;
+        [[x.inv,"--total",x0+gw*.16],[x.val,"--good",x0+gw*.52]].forEach(([v,c,bx],j)=>{const h=ih*v/max;const r=el("rect",{x:bx,y:T+ih-h,width:bw,height:h,fill:css(c),rx:2,opacity:op,style:"cursor:pointer"},s);
+          if(j===1&&x.est){r.setAttribute("stroke",css("--good"));r.setAttribute("stroke-dasharray","4 3")}
+          el("title",{},r,`${x.full}: inversión ${mill(x.inv)} · valor proyectado ${mill(x.val)} · ${x.roi.toFixed(2).replace(".",",")}×`);r.addEventListener("click",()=>setSel(i));
+          el("text",{x:bx+bw/2,y:T+ih-h-4,"text-anchor":"middle",style:"font-size:9.5px"+(on?";fill:"+css("--ink"):"")},s,fmt(v/1e6))});
+        const top=T+ih-ih*Math.max(x.inv,x.val)/max;
+        el("text",{x:x0+gw/2,y:top-16,"text-anchor":"middle",style:"font-size:11px;font-weight:700;fill:"+(x.roi>=1?css("--good"):css("--warn"))},s,x.roi.toFixed(1).replace(".",",")+"×");
+        el("text",{x:x0+gw/2,y:H-B+16,"text-anchor":"middle",style:on?"fill:"+css("--ink")+";font-weight:600":""},s,x.m+(x.est?"*":""));
+        el("text",{x:x0+gw/2,y:H-B+30,"text-anchor":"middle",style:"font-size:9.5px;fill:"+css("--pauta")},s,"$"+fmt(x.cpa/1000)+" mil");
+      });
+      el("text",{x:L-6,y:H-B+30,"text-anchor":"end",style:"font-size:9px;fill:"+css("--pauta")},s,"$/compr.");
+      const best=[...D].filter(x=>!x.partial).sort((a,b)=>b.roi-a.roi)[0],worst=[...D].filter(x=>!x.partial).sort((a,b)=>a.roi-b.roi)[0];
+      document.getElementById("x-inv").innerHTML=`<b>Lo que se ve:</b> entre ${D[0].full.toLowerCase()} y ${D[D.length-1].full.toLowerCase()} se invirtieron ${mill(totInv)} en pauta y el valor proyectado de los clientes que trajo es ${mill(total)}, ${(total/totInv).toFixed(2).replace(".",",")} veces la inversión. El mejor mes fue ${best.full.toLowerCase()} (${best.roi.toFixed(2).replace(".",",")}×, ${money(best.cpa)} por comprador) y el más bajo ${worst.full.toLowerCase()} (${worst.roi.toFixed(2).replace(".",",")}×, ${money(worst.cpa)} por comprador).`;
+    })();
+
+    // LTV
+    (function(){
+      const W=900,H=300,L=64,R=10,T=24,B=30,max=1000e6,s=svg("ch-ltv",W,H,"Valor de vida total de clientes nuevos por mes, parte de pauta y otros canales"),gw=(W-L-R)/D.length,ih=H-T-B;
+      [0,250,500,750,1000].forEach(v=>{const y=T+ih*(1-v*1e6/max);el("line",{x1:L,x2:W-R,y1:y,y2:y,stroke:css("--line")},s);el("text",{x:L-6,y:y+4,"text-anchor":"end"},s,"$"+v+" M")});
+      D.forEach((x,i)=>{const bw=gw*.56,bx=L+i*gw+(gw-bw)/2,on=i===sel,tot=x.n*x.ltv,hT=ih*tot/max,hP=ih*x.val/max,op=on?1:.45;
+        const g=el("rect",{x:bx,y:T+ih-hT,width:bw,height:hT-hP,fill:css("--total"),rx:2,opacity:op,style:"cursor:pointer"},s);
+        const p=el("rect",{x:bx,y:T+ih-hP,width:bw,height:hP,fill:css("--good"),opacity:op,style:"cursor:pointer"},s);
+        if(x.est){[g,p].forEach(r=>{r.setAttribute("stroke",css("--muted"));r.setAttribute("stroke-dasharray","4 3")})}
+        [g,p].forEach(r=>{el("title",{},r,`${x.full}: total ${mill(tot)} · pauta ${mill(x.val)} (${pct(x.share)})`);r.addEventListener("click",()=>setSel(i))});
+        el("text",{x:bx+bw/2,y:T+ih-hT-6,"text-anchor":"middle",style:on?"fill:"+css("--ink")+";font-weight:600":""},s,fmt(tot/1e6));
+        if(hP>16)el("text",{x:bx+bw/2,y:T+ih-hP/2+4,"text-anchor":"middle",style:"fill:#fff;font-weight:600"},s,fmt(x.val/1e6));
+        el("text",{x:bx+bw/2,y:H-B+18,"text-anchor":"middle",style:on?"fill:"+css("--ink")+";font-weight:600":""},s,x.m+(x.est?"*":""));
+      });
+      const tot=d.n*d.ltv;
+      document.getElementById("x-ltv").innerHTML=`<b>En ${d.full.toLowerCase()}:</b> los ${fmt(d.n)} clientes nuevos suman un valor de vida de ${mill(tot)} (${fmt(d.n)} × ${money(d.ltv)}). Con ${pct(d.share)} de pauta, ${mill(d.val)} se atribuyen a la pauta y ${mill(tot-d.val)} a los demás canales.`;
+    })();
+
+    // table
+    document.getElementById("tb-all").innerHTML=D.map((x,i)=>`<tr class="${i===sel?"sel":""}" data-i="${i}" style="cursor:pointer"><td>${x.full}</td><td>${fmt(x.n)}</td><td>${pct(x.share)}</td><td>${fmt(x.atr)}</td><td>${money(x.arpu)}</td><td>${pct(x.rr)}${x.est?"*":""}</td><td>${money(x.ltv)}</td><td>${mill(x.val)}</td><td>${mill(x.inv)}</td><td>${money(x.cpa)}</td><td>${x.roi.toFixed(2).replace(".",",")}×</td></tr>`).join("")+
+      `<tr class="tot"><td>Total ${D[0].m.toLowerCase()}–${D[D.length-1].m.toLowerCase()}</td><td>${fmt(D.reduce((a,x)=>a+x.n,0))}</td><td></td><td>${fmt(totAtr)}</td><td></td><td></td><td></td><td>${mill(total)}</td><td>${mill(totInv)}</td><td>${money(totInv/totAtr)}</td><td>${(total/totInv).toFixed(2).replace(".",",")}×</td></tr>`;
+    document.querySelectorAll("#tb-all tr[data-i]").forEach(tr=>tr.addEventListener("click",()=>setSel(+tr.dataset.i)));
+  }
+
+  // ===== Detalle diario (desde el 1 de octubre, GA4 + CRM) =====
+  // [fecha, registros totales, google, tiktok, meta, compradores nuevos CRM, inversión total, inv. google, inv. meta, inv. tiktok, inv. adquisición+awareness]
+  const RAW_DAY=DATA.diario.dias;
+  // registros por grupo de campaña y día (mismo orden de fechas)
+  const CAMP_DEF=[["Search categoría","Google Ads","acq"],["Influencers","Meta","acq"],["TikTok registros","TikTok","acq"],["Search competencia","Google Ads","acq"],["Performance Max","Google Ads","acq"],["Remarketing MiLoto","Meta / TikTok","ret"],["Remarketing Baloto","TikTok / Meta","ret"],["Remarketing Colorloto","Meta","ret"],["Promo Italia (activación)","Meta / TikTok","ret"],["Otras campañas","Varias","otr"]];
+  const CAMP_DAY=DATA.diario.camp_reg;
+  // inversión por grupo de campaña y día (último valor = inversión total del día)
+  const CAMP_INV=DATA.diario.camp_inv;
+  // valor de vida de un cliente nuevo por mes (del resumen mensual); un mes sin dato usa el último disponible
+  const LTVM={};D.forEach(d=>{if(d.ym)LTVM[d.ym]=d.ltv});
+  const MES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  const DAY=RAW_DAY.map(([f,t,g,k,m,n,iv,ig,im,ik,ia],i)=>{const p=g+k+m,dt=new Date(f+"T12:00:00"),ym=f.slice(0,7);
+    const ltv=LTVM[ym]??Object.values(LTVM).slice(-1)[0];const sh=p/t,atr=n*sh;
+    const cv=CAMP_DAY[i].slice(0,9);cv.push(CAMP_DAY[i][9]-cv.reduce((a,b)=>a+b,0));const ci=CAMP_INV[i].slice(0,9);ci.push(CAMP_INV[i][9]-ci.reduce((a,b)=>a+b,0));
+    return {f,t,g,k,m,n,p,o:t-p,sh,atr,ltv,val:atr*ltv,cv,ci,iv,ig,im,ik,ia,ym,d:dt.getDate(),mo:MES[dt.getMonth()],wd:["dom","lun","mar","mié","jue","vie","sáb"][dt.getDay()]}});
+  const dLbl=x=>`${x.d} ${x.mo}`;
+  let rA=0,rB=DAY.length-1,GR="dia";
+  try{const g=localStorage.getItem("granDiario");if(g==="sem"||g==="dia")GR=g}catch(e){}
+  DAY.forEach(x=>{x.name=`${x.wd} ${dLbl(x)}`;x.lab1=null;x.lab2=x.wd});
+  const mondayKey=x=>{const dt=new Date(x.f+"T12:00:00"),w=(dt.getDay()+6)%7;dt.setDate(dt.getDate()-w);return dt.toISOString().slice(0,10)};
+  function groupWeeks(V){const m=new Map();V.forEach(x=>{const k=mondayKey(x);if(!m.has(k))m.set(k,[]);m.get(k).push(x)});
+    return [...m.values()].map(g=>{const a=g[0],b=g[g.length-1],s=g.reduce((o,x)=>({t:o.t+x.t,g:o.g+x.g,k:o.k+x.k,m:o.m+x.m,p:o.p+x.p,n:o.n+x.n,atr:o.atr+x.atr,val:o.val+x.val,iv:o.iv+x.iv,ig:o.ig+x.ig,im:o.im+x.im,ik:o.ik+x.ik,ia:o.ia+x.ia}),{t:0,g:0,k:0,m:0,p:0,n:0,atr:0,val:0,iv:0,ig:0,im:0,ik:0,ia:0});
+      const cv=CAMP_DEF.map((_,j)=>g.reduce((o,x)=>o+x.cv[j],0)),ci=CAMP_DEF.map((_,j)=>g.reduce((o,x)=>o+x.ci[j],0)),rng=a.mo===b.mo?`${a.d}–${b.d} ${b.mo}`:`${dLbl(a)}–${dLbl(b)}`;
+      return {...s,o:s.t-s.p,sh:s.p/s.t,ltv:s.atr?s.val/s.atr:a.ltv,cv,ci,f:a.f,name:"semana "+rng,lab1:rng,lab2:g.length<7?`${g.length} días`:"semana",nd:g.length}})}
+  try{const s=JSON.parse(localStorage.getItem("rangoDiario")||"null");if(s&&DAY[s[0]]&&DAY[s[1]]&&s[0]<=s[1]){rA=s[0];rB=s[1]}}catch(e){}
+
+  // ---- línea de tiempo ----
+  const ia=document.getElementById("tl-a"),ib=document.getElementById("tl-b"),tsel=document.getElementById("tl-sel"),track=document.getElementById("tl-track");
+  [ia,ib].forEach(x=>{x.min=0;x.max=DAY.length-1;x.step=1});
+  (function ticks(){const tk=document.getElementById("tl-ticks"),n=DAY.length,step=n>40?7:(n>20?2:1);
+    tk.innerHTML=DAY.map((x,i)=>(i%step===0||i===n-1)?`<span style="left:${n>1?i/(n-1)*100:0}%">${x.d===1||i===0?dLbl(x):x.d}</span>`:"").join("")})();
+  document.querySelectorAll("[data-gran]").forEach(b=>b.addEventListener("click",()=>{GR=b.dataset.gran;try{localStorage.setItem("granDiario",GR)}catch(e){}syncTimeline();renderDaily()}));
+  function syncTimeline(){
+    document.querySelectorAll("[data-gran]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.gran===GR));ia.value=rA;ib.value=rB;const n=DAY.length-1||1;tsel.style.left=(rA/n*100)+"%";tsel.style.width=((rB-rA)/n*100)+"%";
+    const days=rB-rA+1;document.getElementById("tl-range").textContent=`${dLbl(DAY[rA])} – ${dLbl(DAY[rB])} · ${days} ${days===1?"día":"días"}`;
+    document.querySelectorAll("[data-preset]").forEach(b=>{const p=b.dataset.preset,on=(p==="all"&&rA===0&&rB===DAY.length-1)||(p!=="all"&&rB===DAY.length-1&&days===+p);b.setAttribute("aria-pressed",on)})}
+  function setRange(a,b){rA=Math.max(0,Math.min(a,DAY.length-1));rB=Math.max(rA,Math.min(b,DAY.length-1));try{localStorage.setItem("rangoDiario",JSON.stringify([rA,rB]))}catch(e){}syncTimeline();renderDaily()}
+  ia.addEventListener("input",()=>{let a=+ia.value;if(a>rB)a=rB;setRange(a,rB)});
+  ib.addEventListener("input",()=>{let b=+ib.value;if(b<rA)b=rA;setRange(rA,b)});
+  document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>{const p=b.dataset.preset,L=DAY.length-1;if(p==="all")setRange(0,L);else setRange(Math.max(0,L-(+p)+1),L)}));
+  (function dragSel(){let x0=null,a0,b0;
+    tsel.addEventListener("pointerdown",e=>{x0=e.clientX;a0=rA;b0=rB;tsel.setPointerCapture(e.pointerId);tsel.classList.add("drag")});
+    tsel.addEventListener("pointermove",e=>{if(x0===null)return;const w=track.getBoundingClientRect().width,dd=Math.round((e.clientX-x0)/w*(DAY.length-1));
+      let a=a0+dd,b=b0+dd;if(a<0){b-=a;a=0}if(b>DAY.length-1){a-=b-(DAY.length-1);b=DAY.length-1}if(a!==rA||b!==rB)setRange(a,b)});
+    const end=()=>{x0=null;tsel.classList.remove("drag")};tsel.addEventListener("pointerup",end);tsel.addEventListener("pointercancel",end)})();
+
+  // ---- utilidades de gráfico ----
+  function axisDays(s,V,x0,cw,yBase){const n=V.length,step=n>40?7:(n>21?2:1);
+    V.forEach((x,i)=>{if(i%step&&i!==n-1)return;const cx=x0+i*cw+cw/2;
+      el("text",{x:cx,y:yBase,"text-anchor":"middle",style:"font-size:10px"},s,x.lab1??(x.d===1||i===0?dLbl(x):x.d));
+      if(n<=21)el("text",{x:cx,y:yBase+12,"text-anchor":"middle",style:"font-size:9px"},s,x.lab2)})}
+  const niceMax=(v,step)=>Math.max(step,Math.ceil(v/step)*step);
+
+  function renderDaily(){
+    const VD=DAY.slice(rA,rB+1),rl=`${dLbl(VD[0])} – ${dLbl(VD[VD.length-1])}`;
+    const V=GR==="sem"?groupWeeks(VD):VD,n=V.length,W1=GR==="sem";
+    const U=W1?{art:"la semana",each:"cada semana",per:"por semana",cap:"Semana",unit:"semana"}:{art:"el día",each:"cada día",per:"por día",cap:"Día",unit:"día"};
+    document.querySelectorAll(".js-unit").forEach(e=>e.textContent=U.unit);
+    document.querySelectorAll(".js-per").forEach(e=>e.textContent=U.per);
+    document.querySelectorAll(".js-range").forEach(e=>e.textContent=rl);
+    const S=VD.reduce((a,x)=>({t:a.t+x.t,g:a.g+x.g,k:a.k+x.k,m:a.m+x.m,p:a.p+x.p,n:a.n+x.n,atr:a.atr+x.atr,val:a.val+x.val,iv:a.iv+x.iv,ig:a.ig+x.ig,im:a.im+x.im,ik:a.ik+x.ik,ia:a.ia+x.ia}),{t:0,g:0,k:0,m:0,p:0,n:0,atr:0,val:0,iv:0,ig:0,im:0,ik:0,ia:0});
+    const months=[...new Set(VD.map(x=>x.ym))],ltvTxt=months.length===1?money(VD[0].ltv):months.map(m=>money(LTVM[m]??VD.find(x=>x.ym===m).ltv)).join(" / ");
+    // KPIs
+    document.getElementById("dk-tot").textContent=fmt(S.t);
+    document.getElementById("dk-pau").textContent=fmt(S.p);
+    document.getElementById("dk-share").textContent=pct(S.p/S.t);
+    document.getElementById("dk-avg").textContent=fmt(S.p/n);document.getElementById("dk-avg-l").textContent=`Registros de pauta ${U.per}, en promedio`;
+    [["dk-g",S.g],["dk-m",S.m],["dk-t",S.k]].forEach(([id,v])=>document.getElementById(id).textContent=`${fmt(v)} · ${pct(v/S.p)}`);
+    document.getElementById("dx-kpi").innerHTML=`<b>Del ${rl}:</b> ${fmt(S.t)} registros exitosos, de los cuales ${fmt(S.p)} vinieron de pauta (${pct(S.p/S.t)}). Google Ads aporta ${pct(S.g/S.p)} de la pauta, Meta ${pct(S.m/S.p)} y TikTok ${pct(S.k/S.p)}.`;
+    document.getElementById("dk-n").textContent=fmt(S.n);
+    document.getElementById("dk-atr").textContent="≈ "+fmt(S.atr);
+    document.getElementById("dk-ltv").textContent=ltvTxt;
+    document.getElementById("dk-ltv-l").textContent="Valor de vida de un cliente nuevo"+(months.length===1?" ("+VD[0].mo+")":" (por mes)");
+    document.getElementById("dk-val").textContent="≈ "+mill(S.val);
+    document.getElementById("dx-val0").innerHTML=`<b>Del ${rl}:</b> ${fmt(S.n)} personas hicieron su primera apuesta. Aplicando día por día el % de pauta, se estima que unos ${fmt(S.atr)} llegaron por campañas. Con un valor de vida de ${ltvTxt} por cliente nuevo, la pauta del periodo suma un valor proyectado de unos ${mill(S.val)}.`;
+
+    // valor proyectado diario
+    (function(){
+      const W=980,H=330,L=64,R=10,T=24,B=70,s=svg("ch-val",W,H,"Valor proyectado diario de la pauta"),cw=(W-L-R)/n,ih=H-T-B;
+      const vs=W1?50e6:5e6,maxV=niceMax(Math.max(...V.map(x=>x.val)),vs);
+      for(let v=0;v<=maxV;v+=vs){const y=T+ih*(1-v/maxV);el("line",{x1:L,x2:W-R,y1:y,y2:y,stroke:css("--line")},s);el("text",{x:L-6,y:y+4,"text-anchor":"end"},s,"$"+fmt(v/1e6)+" M")}
+      el("text",{x:L-6,y:H-B+21,"text-anchor":"end",style:"font-size:10px;font-weight:600;fill:"+css("--pauta")},s,"% pauta");
+      V.forEach((x,i)=>{const bw=Math.min(cw*.7,46),bx=L+i*cw+(cw-bw)/2,h=ih*x.val/maxV;
+        const r=el("rect",{x:bx,y:T+ih-h,width:bw,height:h,fill:css("--good"),rx:2},s);
+        el("title",{},r,`${x.name} · ${fmt(x.n)} compradores nuevos × ${pct(x.sh)} pauta ≈ ${fmt(x.atr)} × ${money(x.ltv)} = ${mill(x.val)}`);
+        if(n<=45)el("text",{x:bx+bw/2,y:T+ih-h-5,"text-anchor":"middle",style:"font-size:9.5px;fill:"+css("--ink")},s,(x.val/1e6).toFixed(1).replace(".",","));
+        if(n<=45){el("rect",{x:bx-1,y:H-B+7,width:bw+2,height:20,rx:4,fill:css("--pauta-soft"),stroke:css("--pauta"),"stroke-width":1},s);
+          el("text",{x:bx+bw/2,y:H-B+21,"text-anchor":"middle",style:"font-size:10.5px;font-weight:700;fill:"+css("--pauta")},s,Math.round(x.sh*100)+"%")}});
+      axisDays(s,V,L,cw,H-B+44);
+    })();
+    const vtop=[...V].sort((a,b)=>b.val-a.val)[0];
+    document.getElementById("dx-val").innerHTML=`<b>En el periodo:</b> ${U.art} que más valor proyectado dejó la pauta fue ${W1?"":"el "}${vtop.name} (${mill(vtop.val)}): ${fmt(vtop.n)} compradores nuevos con ${pct(vtop.sh)} de pauta. En promedio, ${U.each} la pauta sumó unos ${mill(S.val/n)} en valor proyectado.`;
+
+    // inversión y costo
+    document.getElementById("dk-inv").textContent=mill(S.iv);
+    document.getElementById("dk-ia").textContent=`${mill(S.ia)} · ${pct(S.ia/S.iv)}`;
+    document.getElementById("dk-cpa").textContent=money(S.iv/S.atr);
+    document.getElementById("dk-cpr").textContent=money(S.iv/S.p);
+    document.getElementById("dk-roi").textContent=(S.val/S.iv).toFixed(2).replace(".",",")+"×";
+    document.getElementById("dx-inv0").innerHTML=`<b>Del ${rl}:</b> se invirtieron ${mill(S.iv)} en pauta (${pct(S.ia/S.iv)} en adquisición y awareness). Con unos ${fmt(S.atr)} compradores nuevos atribuibles, cada uno costó en promedio ${money(S.iv/S.atr)}; cada registro de pauta en Google Analytics costó ${money(S.iv/S.p)}. El valor proyectado de esos clientes (${mill(S.val)}) equivale a ${(S.val/S.iv).toFixed(2).replace(".",",")} veces la inversión.`;
+    (function(){
+      const W=980,H=340,L=64,R=10,T=24,B=74,s=svg("ch-inv-d",W,H,"Inversión por día y costo por comprador"),cw=(W-L-R)/n,ih=H-T-B;
+      const st=W1?2e7:5e6,max=niceMax(Math.max(...V.map(x=>x.iv)),st);
+      for(let v=0;v<=max;v+=st){const y=T+ih*(1-v/max);el("line",{x1:L,x2:W-R,y1:y,y2:y,stroke:css("--line")},s);el("text",{x:L-6,y:y+4,"text-anchor":"end"},s,"$"+fmt(v/1e6)+" M")}
+      el("text",{x:L-6,y:H-B+21,"text-anchor":"end",style:"font-size:9.5px;font-weight:600;fill:"+css("--pauta")},s,"$/compr.");
+      V.forEach((x,i)=>{const bw=Math.min(cw*.7,46),bx=L+i*cw+(cw-bw)/2;let y=T+ih;
+        [[x.ig,"--c-google"],[x.im,"--c-meta"],[x.ik,"--c-tiktok"],[Math.max(0,x.iv-x.ig-x.im-x.ik),"--total"]].forEach(([v,c])=>{const h=ih*v/max;y-=h;el("rect",{x:bx,y,width:bw,height:h,fill:css(c)},s)});
+        const hit=el("rect",{x:L+i*cw,y:T,width:cw,height:ih,fill:"transparent"},s);
+        const cpa=x.atr?x.iv/x.atr:0;
+        el("title",{},hit,`${x.name} · inversión ${mill(x.iv)} (Google ${mill(x.ig)} · Meta ${mill(x.im)} · TikTok ${mill(x.ik)})\n${fmt(x.atr)} compradores de pauta → ${money(cpa)} por comprador · ${money(x.iv/x.p)} por registro`);
+        if(n<=45){el("text",{x:bx+bw/2,y:T+ih*(1-x.iv/max)-5,"text-anchor":"middle",style:"font-size:9.5px;fill:"+css("--ink")},s,(x.iv/1e6).toFixed(1).replace(".",","));
+          el("rect",{x:bx-3,y:H-B+7,width:bw+6,height:20,rx:4,fill:css("--pauta-soft"),stroke:css("--pauta"),"stroke-width":1},s);
+          el("text",{x:bx+bw/2,y:H-B+21,"text-anchor":"middle",style:"font-size:9.5px;font-weight:700;fill:"+css("--pauta")},s,(cpa/1000).toFixed(cpa<1e4?1:0).replace(".",",")+"k")}});
+      axisDays(s,V,L,cw,H-B+46);
+    })();
+    const cpas=V.filter(x=>x.atr>0).map(x=>({...x,cpa:x.iv/x.atr})),cmin=[...cpas].sort((a,b)=>a.cpa-b.cpa)[0],cmax=[...cpas].sort((a,b)=>b.cpa-a.cpa)[0],imax=[...V].sort((a,b)=>b.iv-a.iv)[0];
+    document.getElementById("dx-inv").innerHTML=`<b>En el periodo:</b> ${U.art} con más inversión fue ${W1?"":"el "}${imax.name} (${mill(imax.iv)}). El costo por comprador más bajo fue ${W1?"":"el "}${cmin.name} (${money(cmin.cpa)}) y el más alto ${W1?"":"el "}${cmax.name} (${money(cmax.cpa)}).`;
+
+    // apiladas por canal
+    (function(){
+      const W=980,H=340,L=48,R=8,T=24,B=40,s=svg("ch-day",W,H,"Registros diarios por canal"),cw=(W-L-R)/n,ih=H-T-B,st=W1?2000:500,max=niceMax(Math.max(...V.map(x=>x.t)),st);
+      for(let v=0;v<=max;v+=st){const y=T+ih*(1-v/max);el("line",{x1:L,x2:W-R,y1:y,y2:y,stroke:css("--line")},s);el("text",{x:L-6,y:y+4,"text-anchor":"end"},s,fmt(v))}
+      V.forEach((x,i)=>{const bw=Math.min(cw*.74,46),bx=L+i*cw+(cw-bw)/2;let y=T+ih;
+        [[x.g,"--c-google"],[x.m,"--c-meta"],[x.k,"--c-tiktok"],[x.o,"--total"]].forEach(([v,c])=>{const h=ih*v/max;y-=h;el("rect",{x:bx,y,width:bw,height:h,fill:css(c)},s)});
+        const hit=el("rect",{x:L+i*cw,y:T,width:cw,height:ih,fill:"transparent"},s);
+        el("title",{},hit,`${x.name} · total ${fmt(x.t)} · pauta ${fmt(x.p)} (${pct(x.sh)})\nGoogle ${fmt(x.g)} · Meta ${fmt(x.m)} · TikTok ${fmt(x.k)} · otros ${fmt(x.o)}`);
+        if(n<=45){el("text",{x:bx+bw/2,y:T+ih*(1-x.t/max)-5,"text-anchor":"middle",style:"font-size:9.5px;fill:"+css("--ink")},s,fmt(x.t));
+          const hp=ih*x.p/max;if(hp>14)el("text",{x:bx+bw/2,y:T+ih-hp+11,"text-anchor":"middle",style:"font-size:9px;fill:#fff;font-weight:600"},s,fmt(x.p))}});
+      axisDays(s,V,L,cw,H-B+14);
+    })();
+    const big=[...V].sort((a,b)=>b.t-a.t)[0],pk=(f,nm)=>{const x=[...V].sort((a,b)=>b[f]-a[f])[0];return `${nm} ${W1?"":"el "}${x.name} (${fmt(x[f])})`};
+    document.getElementById("dx-day").innerHTML=`<b>En el periodo:</b> ${U.art} con más registros fue ${W1?"":"el "}${big.name} (${fmt(big.t)}), con ${fmt(big.p)} de pauta. ${U.cap} pico por plataforma: ${pk("g","Google Ads")}, ${pk("m","Meta")} y ${pk("k","TikTok")}.`;
+
+    // % pauta diario
+    (function(){
+      const W=980,H=260,L=48,R=8,T=24,B=40,s=svg("ch-share",W,H,"Participación diaria de la pauta"),cw=(W-L-R)/n,ih=H-T-B,avg=S.p/S.t,yv=v=>T+ih*(1-v/0.9);
+      [0,.2,.4,.6,.8].forEach(v=>{const y=yv(v);el("line",{x1:L,x2:W-R,y1:y,y2:y,stroke:css("--line")},s);el("text",{x:L-6,y:y+4,"text-anchor":"end"},s,Math.round(v*100)+" %")});
+      el("line",{x1:L,x2:W-R,y1:yv(avg),y2:yv(avg),stroke:css("--muted"),"stroke-dasharray":"5 4"},s);
+      document.getElementById("lg-avg").textContent=pct(avg);
+      const pts=V.map((x,i)=>[L+i*cw+cw/2,yv(x.sh)]);
+      if(n>1)el("polyline",{points:pts.map(p=>p.join(",")).join(" "),fill:"none",stroke:css("--pauta"),"stroke-width":2.2},s);
+      V.forEach((x,i)=>{const [cx,cy]=pts[i];const c=el("circle",{cx,cy,r:4,fill:x.sh>=avg?css("--pauta"):css("--surface"),stroke:css("--pauta"),"stroke-width":2},s);
+        el("title",{},c,`${x.name} · ${pct(x.sh)} (${fmt(x.p)} de ${fmt(x.t)})`);
+        if(n<=45)el("text",{x:cx,y:cy-9,"text-anchor":"middle",style:"font-size:9px;fill:"+css("--ink")},s,Math.round(x.sh*100))});
+      axisDays(s,V,L,cw,H-B+14);
+    })();
+    const hi=[...V].sort((a,b)=>b.sh-a.sh)[0],lo=[...V].sort((a,b)=>a.sh-b.sh)[0];
+    document.getElementById("dx-share").innerHTML=`<b>En el periodo:</b> la participación más alta fue ${W1?"":"el "}${hi.name} (${pct(hi.sh)}) y la más baja ${W1?"":"el "}${lo.name} (${pct(lo.sh)}); el promedio fue ${pct(S.p/S.t)}. Los números sobre cada punto son el porcentaje ${W1?"de la semana":"del día"}.`;
+
+    // tabla diaria
+    const tops=new Set([...V].sort((a,b)=>b.p-a.p).slice(0,3).map(x=>x.f));
+    document.getElementById("tb-day").innerHTML=V.map(x=>`<tr class="${tops.has(x.f)?"sel":""}"><td>${x.name}</td><td>${fmt(x.t)}</td><td>${fmt(x.p)}</td><td>${pct(x.sh)}</td><td>${fmt(x.g)}</td><td>${fmt(x.m)}</td><td>${fmt(x.k)}</td><td>${fmt(x.o)}</td><td>${fmt(x.n)}</td><td>${fmt(x.atr)}</td><td>${mill(x.val)}</td><td>${mill(x.iv)}</td><td>${x.atr?money(x.iv/x.atr):"–"}</td></tr>`).join("")+
+      `<tr class="tot"><td>Total ${rl}</td><td>${fmt(S.t)}</td><td>${fmt(S.p)}</td><td>${pct(S.p/S.t)}</td><td>${fmt(S.g)}</td><td>${fmt(S.m)}</td><td>${fmt(S.k)}</td><td>${fmt(S.t-S.p)}</td><td>${fmt(S.n)}</td><td>${fmt(S.atr)}</td><td>${mill(S.val)}</td><td>${mill(S.iv)}</td><td>${money(S.iv/S.atr)}</td></tr>`;
+
+    // plataformas y campañas
+    (function(){
+      const d=[["Google Ads",S.g,"--c-google",S.ig],["Meta",S.m,"--c-meta",S.im],["TikTok",S.k,"--c-tiktok",S.ik]],W=900,H=150,L=110,R=330,rowH=40,max=Math.max(S.g,S.m,S.k)*1.15||1,s=svg("ch-plat",W,H,"Registros de pauta por plataforma");
+      d.forEach(([nm,v,c,iv],i)=>{const y=12+i*(rowH+6),w=(W-L-R)*v/max,atr=S.n*v/S.t;
+        el("text",{x:L-10,y:y+rowH/2+4,"text-anchor":"end",style:"font-size:13px"},s,nm);
+        el("rect",{x:L,y,width:w,height:rowH,fill:css(c),rx:3},s);
+        el("text",{x:L+w+8,y:y+rowH/2+4,style:"font-size:13px;font-weight:600;fill:"+css("--ink")},s,`${fmt(v)} reg. · ${pct(v/S.p)} · inv. ${mill(iv)} · ${money(iv/atr)} por comprador`)});
+    })();
+    const ct=CAMP_DEF.map((c,j)=>[...c,VD.reduce((a,x)=>a+x.cv[j],0),VD.reduce((a,x)=>a+x.ci[j],0)]).sort((a,b)=>(a[2]==="otr")-(b[2]==="otr")||b[3]-a[3]);
+    document.getElementById("tb-camp").innerHTML=ct.map(([c,p,,v,iv])=>`<tr><td>${c}</td><td>${p}</td><td>${fmt(v)}</td><td>${pct(v/S.p)}</td><td>${mill(iv)}</td><td>${v?money(iv/v):"–"}</td></tr>`).join("")+
+      `<tr class="tot"><td>Total pauta</td><td></td><td>${fmt(S.p)}</td><td>100,0 %</td><td>${mill(S.iv)}</td><td>${money(S.iv/S.p)}</td></tr>`;
+    const acq=ct.filter(c=>c[2]==="acq").reduce((a,c)=>a+c[3],0),ret=ct.filter(c=>c[2]==="ret").reduce((a,c)=>a+c[3],0);
+    document.getElementById("dx-acq").textContent=`${fmt(acq)} registros, ${pct(acq/S.p)}`;
+    document.getElementById("dx-ret").textContent=`${fmt(ret)} registros, ${pct(ret/S.p)}`;
+  }
+  syncTimeline();
+
+  // ===== pestañas =====
+  function route(){
+    const v=location.hash==="#diario"?"diario":"mensual";
+    document.getElementById("v-mensual").hidden=v!=="mensual";
+    document.getElementById("v-diario").hidden=v!=="diario";
+    document.getElementById("tab-mensual").setAttribute("aria-selected",v==="mensual");
+    document.getElementById("tab-diario").setAttribute("aria-selected",v==="diario");
+    if(v==="diario")renderDaily();
+  }
+  window.addEventListener("hashchange",route);
+  route();
+
+  render();
+  // textos que dependen de la fecha de corte
+  const est=D.filter(x=>x.est).map(x=>x.full.replace(/ \(.*\)/,"").toLowerCase()),par=D.find(x=>x.partial),fc=new Date(DATA.meta.corte+"T12:00:00");
+  const fTxt=fc.getDate()+" "+["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"][fc.getMonth()]+" "+fc.getFullYear();
+  document.getElementById("sup-rr").textContent=`La recompra de ${est.join(" y ")} aún no se puede medir; se usa el promedio de ${RR_LBL} (${pct(RR_EST)}). Se actualiza sola al cerrar cada mes siguiente.`;
+  const sp=document.getElementById("sup-parcial");if(par)sp.textContent=`${par.full.replace(/ \(.*\)/,"")} está al corte del ${fTxt}: sus cifras son parciales.`;else sp.remove();
+  document.getElementById("f-corte").textContent=`Datos al ${fTxt}. Se actualizan automáticamente cada mañana.`;
+}
+fetch("data.json?v="+Date.now()).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(iniciar).catch(e=>{
+  document.querySelector(".wrap").insertAdjacentHTML("afterbegin",'<div class="srcnote"><b>No se pudieron cargar los datos.</b> Intenta recargar la página en unos minutos.</div>');console.error(e)});
+</script>
+
+</body>
+</html>

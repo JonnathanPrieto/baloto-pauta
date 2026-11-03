@@ -1,0 +1,44 @@
+name: Actualizar datos del dashboard
+
+on:
+  schedule:
+    # Todos los días a las 7:00 a. m. hora Colombia (12:00 UTC), después de la sincronización de GA4 (4:00 a. m.)
+    - cron: "0 12 * * *"
+  workflow_dispatch: {}   # permite correrlo a mano desde la pestaña Actions
+
+permissions:
+  contents: write
+
+concurrency:
+  group: actualizar-datos
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Consultar Zoho Analytics y regenerar data.json
+        env:
+          ZOHO_CLIENT_ID: ${{ secrets.ZOHO_CLIENT_ID }}
+          ZOHO_CLIENT_SECRET: ${{ secrets.ZOHO_CLIENT_SECRET }}
+          ZOHO_REFRESH_TOKEN: ${{ secrets.ZOHO_REFRESH_TOKEN }}
+        run: python scripts/actualizar.py
+
+      - name: Publicar si hubo cambios
+        run: |
+          if git diff --quiet -- data.json; then
+            echo "Sin cambios en los datos."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git commit -m "Datos actualizados $(date -u +%Y-%m-%d)"
+          git push
